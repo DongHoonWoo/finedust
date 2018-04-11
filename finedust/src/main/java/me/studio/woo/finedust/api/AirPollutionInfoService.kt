@@ -29,6 +29,7 @@ interface AirPollutionInfoService {
     fun getAirPollutionByMsrStationRx(
         @Query("stationName") stationName: String,
         @Query("dataTerm") dataTerm: String = "DAILY",
+        @Query("ver")version: String = "1.3",
         @Query("serviceKey") serviceKey: String = URLDecoder.decode(
             "9qGNRtBZob%2BaCmf%2BFVTpiuHODyXY0SRzHnVSib8PpjVMSDXb%2F4G%2FoEPXPHGjKvxaSRDbctN5CEuzUBr5h8Acaw%3D%3D",
             "utf-8"

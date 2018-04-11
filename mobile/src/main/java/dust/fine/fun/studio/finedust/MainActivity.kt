@@ -13,6 +13,7 @@ import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.View
+import android.widget.ImageView
 import android.widget.TextView
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -20,14 +21,17 @@ import dust.fine.`fun`.studio.finedust.BuildConfig.APPLICATION_ID
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import me.studio.woo.finedust.api.AirPollutionInfoService
+import me.studio.woo.finedust.model.AirQualityData
 import me.studio.woo.finedust.model.MeasurmentSatationResponse
 import retrofit2.Call
 
-class MainActivity : AppCompatActivity() {
+class
+MainActivity : AppCompatActivity() {
     private val TAG = "MainActivity"
     private val REQUEST_PERMISSIONS_REQUEST_CODE = 34
 
-    private lateinit var resultTextView: TextView
+    private lateinit var airlevel: TextView
+    private lateinit var icon: ImageView
     private lateinit var button: View
     private lateinit var latitudeText: TextView
     private lateinit var longitudeText: TextView
@@ -39,9 +43,10 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        resultTextView = findViewById(R.id.result)
-        latitudeText = findViewById(R.id.latitude_text)
-        longitudeText = findViewById(R.id.longitude_text)
+        airlevel = findViewById(R.id.air_level)
+        icon = findViewById(R.id.icon)
+//        latitudeText = findViewById(R.id.latitude_text)
+//        longitudeText = findViewById(R.id.longitude_text)
 
         button = findViewById(R.id.button) as View
         button.setOnClickListener { _ ->
@@ -94,7 +99,8 @@ class MainActivity : AppCompatActivity() {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { result ->
                     result.list.let {
-                        resultTextView.text = it.get(0).toString()
+                        //                        resultTextView.text = it.get(0).toString()
+                        setUI(it.get(0))
                     }
                 }
         }
@@ -104,15 +110,50 @@ class MainActivity : AppCompatActivity() {
 //        }
     }
 
-    override fun onStart() {
-        super.onStart()
+    private fun setUI(airQualityData: AirQualityData) {
+        val pm_10Item = AirLeveIItemView(findViewById(R.id.pm_10))
+        val pm_25Item = AirLeveIItemView(findViewById(R.id.pm_25))
 
-        if (!checkPermissions()) {
-            requestPermissions()
-        } else {
-            getLastLocation()
+
+        var value = airValueToInt(airQualityData.pm10Value)
+        AIR_LEVEL.get(AirQualityData.getPM10Level(value))?.let {
+            pm_10Item.setData(it, airQualityData.pm10Value)
+        }
+
+        value = airValueToInt(airQualityData.pm25Value)
+        AIR_LEVEL.get(AirQualityData.getPM25Level(value))?.let {
+            pm_25Item.setData(it, airQualityData.pm25Value)
         }
     }
+
+
+    private fun airValueToInt(value: String): Int {
+        if (value.isNotEmpty() && !value.contains(Regex("\\D"))) {
+            return value.toInt()
+        }
+        return 0
+    }
+
+
+//        var airlevelInfo =
+//            AIR_LEVEL.get(AirQualityData.getPM10Level(airQualityData.pm10Value.toInt()))
+//        airlevelInfo?.let {
+//            icon.setImageResource(it.iconRes)
+//            icon.setColorFilter(it.levelColor)
+//            airlevel.text = it.levelString
+//            airlevel.setTextColor(it.levelColor)
+//        }
+//    }
+
+//    override fun onStart() {
+//        super.onStart()
+
+//        if (!checkPermissions()) {
+//            requestPermissions()
+//        } else {
+//            getLastLocation()
+//        }
+//    }
 
     /**
      * Provides a simple way of getting a device's location and is well suited for

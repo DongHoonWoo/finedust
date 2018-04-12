@@ -13,19 +13,15 @@
     <TextView
         android:id="@+id/air_value"
         android:layout_width="wrap_content"
-        android:layout_height="24dp"
-        android:layout_marginTop="16dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:includeFontPadding="false"
-        android:text=""
         android:textSize="20dp" />
 
     <TextView
         android:id="@+id/air_level"
         android:layout_width="wrap_content"
-        android:layout_height="24dp"
-        android:layout_marginTop="16dp"
-        android:text=""
+        android:layout_height="wrap_content"
         android:textSize="20dp" />
-
-
 </LinearLayout>
+

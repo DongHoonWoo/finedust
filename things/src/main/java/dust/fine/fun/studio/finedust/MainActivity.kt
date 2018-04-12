@@ -74,12 +74,16 @@ class MainActivity : Activity() {
 
         var value = airValueToInt(airQualityData.pm10Value)
         AIR_LEVEL.get(AirQualityData.getPM10Level(value))?.let {
-            pm_10Item.setData(it, airQualityData.pm10Value)
+            val airValue = "PM10 : " + airQualityData.pm10Value + getString(R.string.air_level_unit)
+            val airLevel = it.levelString
+            pm_10Item.setData(it.iconRes, airValue, airLevel, it.levelColor)
         }
 
         value = airValueToInt(airQualityData.pm25Value)
         AIR_LEVEL.get(AirQualityData.getPM25Level(value))?.let {
-            pm_25Item.setData(it, airQualityData.pm25Value)
+            val airValue = "PM25 : " + airQualityData.pm25Value + getString(R.string.air_level_unit)
+            val airLevel = it.levelString
+            pm_25Item.setData(it.iconRes, airValue, airLevel, it.levelColor)
         }
     }
 

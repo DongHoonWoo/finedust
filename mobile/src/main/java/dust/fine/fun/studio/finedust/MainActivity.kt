@@ -106,7 +106,7 @@ MainActivity : AppCompatActivity() {
         }
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 //        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-//            Log.d(TAG, "locationo : " + location)
+//            Log.d(TAG, "locationo : " + location)fddfdfd
 //        }
     }
 

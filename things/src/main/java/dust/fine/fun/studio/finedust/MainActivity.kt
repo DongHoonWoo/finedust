@@ -2,6 +2,8 @@ package dust.fine.`fun`.studio.finedust
 
 import android.app.Activity
 import android.os.Bundle
+import android.os.Handler
+import android.util.Config.LOGD
 import android.util.Log
 import android.view.View
 import com.google.android.things.pio.Gpio
@@ -32,15 +34,35 @@ import me.studio.woo.finedust.model.AirQualityData
  *
  */
 class MainActivity : Activity() {
+    private val SENSOR_GPIO = "BCM5"
+    private val MOTOR_GPIO = "BCM6"
+
+    private val handler = Handler()
     private lateinit var button: View
+
     private lateinit var sensorGpio: Gpio
+    private lateinit var motorGpio: Gpio
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val pioService = PeripheralManager.getInstance()
-        sensorGpio = pioService.openGpio("BCM5")
+        initSensor()
+        initMotor()
+
+//        button = findViewById(R.id.button)
+//        button.setOnClickListener { _ ->
+//            getAirPollution()
+//        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        closeGpio()
+    }
+
+    private fun initSensor() {
+        sensorGpio = PeripheralManager.getInstance().openGpio(SENSOR_GPIO)
         sensorGpio.setDirection(Gpio.DIRECTION_IN)
         sensorGpio.setActiveType(Gpio.ACTIVE_HIGH)
         sensorGpio.setEdgeTriggerType(Gpio.EDGE_RISING)
@@ -49,22 +71,47 @@ class MainActivity : Activity() {
             getAirPollution()
             true
         }
+    }
 
-        button = findViewById(R.id.button)
-        button.setOnClickListener { _ ->
-            getAirPollution()
-        }
+    private fun initMotor() {
+        motorGpio = PeripheralManager.getInstance().openGpio(MOTOR_GPIO)
+        motorGpio.setDirection(Gpio.DIRECTION_OUT_INITIALLY_LOW)
+    }
+
+    private fun turnOnMotor(sec: Int) {
+        motorGpio.value = true
+        handler.postDelayed(
+            {
+                motorGpio.value = false
+            },
+            (sec * 1000).toLong()
+        )
+    }
+
+    private fun closeGpio() {
+        sensorGpio.close()
+        motorGpio.close()
     }
 
     private fun getAirPollution() {
         AirPollutionInfoService.create().getAirPollutionByMsrStationRx("수지")
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
-            .subscribe { result ->
+            .subscribe({ result ->
                 result.list.let {
                     setUI(it.get(0))
                 }
-            }
+            },
+                { ex ->
+                    Log.d("TEST", "error -> " + ex.toString())
+                }
+            )
+    }
+
+    private fun checkAirValue(pm10Level: Int, pm25Level: Int) {
+        if (pm10Level > 2 || pm25Level > 2) {
+            turnOnMotor(3)
+        }
     }
 
     private fun setUI(airQualityData: AirQualityData) {
@@ -72,21 +119,22 @@ class MainActivity : Activity() {
         val pm_25Item = AirLeveIItemView(findViewById(R.id.pm_25))
 
 
-        var value = airValueToInt(airQualityData.pm10Value)
-        AIR_LEVEL.get(AirQualityData.getPM10Level(value))?.let {
+        val pm10Level = airValueToInt(airQualityData.pm10Value)
+        AIR_LEVEL.get(AirQualityData.getPM10Level(pm10Level))?.let {
             val airValue = "PM10 : " + airQualityData.pm10Value + getString(R.string.air_level_unit)
             val airLevel = it.levelString
             pm_10Item.setData(it.iconRes, airValue, airLevel, it.levelColor)
         }
 
-        value = airValueToInt(airQualityData.pm25Value)
-        AIR_LEVEL.get(AirQualityData.getPM25Level(value))?.let {
+        val pm25Level = airValueToInt(airQualityData.pm25Value)
+        AIR_LEVEL.get(AirQualityData.getPM25Level(pm25Level))?.let {
             val airValue = "PM25 : " + airQualityData.pm25Value + getString(R.string.air_level_unit)
             val airLevel = it.levelString
             pm_25Item.setData(it.iconRes, airValue, airLevel, it.levelColor)
         }
-    }
 
+        checkAirValue(pm10Level, pm25Level)
+    }
 
     private fun airValueToInt(value: String): Int {
         if (value.isNotEmpty() && !value.contains(Regex("\\D"))) {

@@ -8,6 +8,7 @@ import android.util.Log
 import android.view.View
 import com.google.android.things.pio.Gpio
 import com.google.android.things.pio.PeripheralManager
+import com.google.android.things.pio.Pwm
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import me.studio.woo.finedust.api.AirPollutionInfoService
@@ -34,14 +35,12 @@ import me.studio.woo.finedust.model.AirQualityData
  *
  */
 class MainActivity : Activity() {
-    private val SENSOR_GPIO = "BCM5"
-    private val MOTOR_GPIO = "BCM6"
-
     private val handler = Handler()
     private lateinit var button: View
 
     private lateinit var sensorGpio: Gpio
     private lateinit var motorGpio: Gpio
+    private lateinit var pwm: Pwm
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,7 +61,7 @@ class MainActivity : Activity() {
     }
 
     private fun initSensor() {
-        sensorGpio = PeripheralManager.getInstance().openGpio(SENSOR_GPIO)
+        sensorGpio = PeripheralManager.getInstance().openGpio("BCM5")
         sensorGpio.setDirection(Gpio.DIRECTION_IN)
         sensorGpio.setActiveType(Gpio.ACTIVE_HIGH)
         sensorGpio.setEdgeTriggerType(Gpio.EDGE_RISING)
@@ -74,15 +73,23 @@ class MainActivity : Activity() {
     }
 
     private fun initMotor() {
-        motorGpio = PeripheralManager.getInstance().openGpio(MOTOR_GPIO)
+        motorGpio = PeripheralManager.getInstance().openGpio("BCM6")
         motorGpio.setDirection(Gpio.DIRECTION_OUT_INITIALLY_LOW)
+
+        pwm = PeripheralManager.getInstance().openPwm("PWM1")
+        pwm.setPwmFrequencyHz(50.0) // 50Hz
+        pwm.setPwmDutyCycle(25.0) // 25%
+        pwm.setEnabled(false)
     }
+
 
     private fun turnOnMotor(sec: Int) {
         motorGpio.value = true
+        pwm.setEnabled(true)
         handler.postDelayed(
             {
                 motorGpio.value = false
+                pwm.setEnabled(false)
             },
             (sec * 1000).toLong()
         )
@@ -91,6 +98,7 @@ class MainActivity : Activity() {
     private fun closeGpio() {
         sensorGpio.close()
         motorGpio.close()
+        pwm.close()
     }
 
     private fun getAirPollution() {
@@ -110,7 +118,7 @@ class MainActivity : Activity() {
 
     private fun checkAirValue(pm10Level: Int, pm25Level: Int) {
         if (pm10Level > 2 || pm25Level > 2) {
-            turnOnMotor(3)
+            turnOnMotor(5)
         }
     }
 
